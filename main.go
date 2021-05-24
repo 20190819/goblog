@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -47,18 +48,18 @@ func articlesStoreHandler(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
 		fmt.Fprint(w, "请提供正确的数据！")
+	} else {
+		title := r.PostForm.Get("title")
+		body := r.PostForm.Get("body")
+		lastInsertID, err := saveArticleDB(title, body)
+		if lastInsertID > 0 {
+			fmt.Fprint(w, "插入成功，ID 为"+strconv.FormatInt(lastInsertID, 10))
+		} else {
+			checkError(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, "500服务器内部错误")
+		}
 	}
-
-	title := r.PostForm.Get("title")
-	fmt.Fprintf(w, "POST PostForm: %v <br>", r.PostForm)
-	fmt.Fprintf(w, "POST Form: %v <br>", r.Form)
-	fmt.Fprintf(w, "title 的值为: %v <br>", title)
-
-	fmt.Fprintf(w, "FormValue title:%v <br>", r.FormValue("title"))
-	fmt.Fprintf(w, "PostFormValue title:%v <br>", r.PostFormValue("title"))
-
-	fmt.Fprintf(w, "FormValue test:%v <br>", r.FormValue("test"))
-	fmt.Fprintf(w, "PostFormValue test:%v <br>", r.PostFormValue("test"))
 
 }
 
@@ -140,6 +141,32 @@ func createTables() {
 
 	_, err := db.Exec(createArticlesSQL)
 	checkError(err)
+}
+
+func saveArticleDB(title string, body string) (int64, error) {
+	var (
+		id   int64
+		err  error
+		rs   sql.Result
+		stmt *sql.Stmt
+	)
+
+	stmt, err = db.Prepare("INSERT INTO articles (title, body) VALUES(?,?)")
+
+	if err != nil {
+		return 0, err
+	}
+
+	defer stmt.Close()
+
+	rs, err = stmt.Exec(title, body)
+
+	if id, err = rs.LastInsertId(); id > 0 {
+		return id, nil
+	} else {
+		return 0, err
+	}
+
 }
 
 func main() {
