@@ -3,11 +3,14 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/go-sql-driver/mysql"
 	_ "github.com/go-sql-driver/mysql"
@@ -39,14 +42,16 @@ type Article struct {
 	Title, Body string
 	ID          int64
 }
+type ArticleFormatData struct {
+	Title, Body string
+	URL         *url.URL
+	Errors      error
+}
 
 func articlesShowhandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id := vars["id"]
 
-	article := Article{}
-	query := "select * from articles where id=?"
-	err := db.QueryRow(query, id).Scan(&article.ID, &article.Title, &article.Body)
+	id := getRouteVariable("id", r)
+	article, err := getArticleById(id)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			w.WriteHeader(http.StatusNotFound)
@@ -104,8 +109,108 @@ func articlesCreateHandler(rw http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(rw, html, storeUrl)
 }
 
-func articlesEditHandler(rw http.ResponseWriter, r *http.Request) {
+func articlesEditHandler(w http.ResponseWriter, r *http.Request) {
+	// 1. 获取ID
+	id := getRouteVariable("id", r)
+	// 2. 读取文章
+	article, err := getArticleById(id)
 
+	if err == nil {
+		updateUrl, _ := router.Get("articles.update").URL("id", id)
+		data := ArticleFormatData{
+			Title:  article.Title,
+			Body:   article.Body,
+			URL:    updateUrl,
+			Errors: nil,
+		}
+		tmpl, err := template.ParseFiles("resources/views/articles/edit.gohtml")
+		checkError(err)
+		tmpl.Execute(w, data)
+	} else {
+		if err == sql.ErrNoRows {
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprint(w, "文章未找到~")
+		} else {
+			checkError(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, "500 服务器错误")
+		}
+	}
+}
+
+func articlesUpdateHandler(w http.ResponseWriter, r *http.Request) {
+	// 1. 获取ID
+	id := getRouteVariable("id", r)
+	// 2. 读取文章
+	_, err := getArticleById(id)
+	if err == nil {
+		title := r.PostFormValue("title")
+		body := r.PostFormValue("body")
+
+		validateErr := validateArticleFormData(title, body)
+		if len(validateErr) == 0 {
+			// 通过验证
+			query := "UPDATE articles SET title = ?, body = ? WHERE id = ?"
+			rs, err := db.Exec(query, title, body, id)
+			if err != nil {
+				checkError(err)
+				w.WriteHeader(http.StatusInternalServerError)
+				fmt.Fprint(w, "服务器错误")
+				return
+			}
+
+			if n, _ := rs.RowsAffected(); n > 0 {
+
+				showURL, _ := router.Get("articles.show").URL("id", id)
+				http.Redirect(w, r, showURL.String(), http.StatusFound)
+			} else {
+				fmt.Fprint(w, "您没有做任何更改！")
+			}
+		} else {
+			fmt.Fprint(w, "表单验证未通过")
+		}
+	} else {
+		if err == sql.ErrNoRows {
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprint(w, "文章未找到~")
+		} else {
+			checkError(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, "500 服务器错误")
+		}
+	}
+
+}
+
+// 获取路由的参数
+func getRouteVariable(paramsString string, r *http.Request) string {
+	vars := mux.Vars(r)
+	return vars[paramsString]
+}
+
+func getArticleById(id interface{}) (Article, error) {
+	article := Article{}
+	query := "SELECT * FROM articles WHERE id = ?"
+	err := db.QueryRow(query, id).Scan(&article.ID, &article.Title, &article.Body)
+	return article, err
+}
+
+func validateArticleFormData(title string, body string) map[string]string {
+	errors := make(map[string]string)
+	// 1. 验证标题
+	if title == "" {
+		errors["title"] = "标题不能为空"
+	} else if utf8.RuneCountInString(title) < 3 || utf8.RuneCountInString(title) > 40 {
+		errors["title"] = "标题长度需介于 3-40"
+	}
+
+	// 2.验证内容
+	if body == "" {
+		errors["body"] = "内容不能为空"
+	} else if utf8.RuneCountInString(body) < 10 {
+		errors["body"] = "内容长度需大于或等于 10 个字节"
+	}
+	return errors
 }
 
 func forceHtmlMiddleware(next http.Handler) http.Handler {
@@ -204,7 +309,9 @@ func main() {
 	router.HandleFunc("/articles", articlesIndexHandler).Methods("GET").Name("articles.index")
 	router.HandleFunc("/articles", articlesStoreHandler).Methods("POST").Name("articles.store")
 	router.HandleFunc("/articles/create", articlesCreateHandler).Methods("GET").Name("articles.create")
-	router.HandleFunc("/articles/{id:[1-9]+}", articlesEditHandler).Methods("GET").Name("articles.edit")
+
+	router.HandleFunc("/articles/{id:[1-9]+}/edit", articlesEditHandler).Methods("GET").Name("articles.edit")
+	router.HandleFunc("/articles/{id:[0-9]+}", articlesUpdateHandler).Methods("POST").Name("articles.update")
 
 	router.NotFoundHandler = http.HandlerFunc(notFoundHandler)
 	router.Use(forceHtmlMiddleware)
