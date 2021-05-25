@@ -104,6 +104,10 @@ func articlesCreateHandler(rw http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(rw, html, storeUrl)
 }
 
+func articlesEditHandler(rw http.ResponseWriter, r *http.Request) {
+
+}
+
 func forceHtmlMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-type", "text/html;charset=utf-8")
@@ -200,6 +204,7 @@ func main() {
 	router.HandleFunc("/articles", articlesIndexHandler).Methods("GET").Name("articles.index")
 	router.HandleFunc("/articles", articlesStoreHandler).Methods("POST").Name("articles.store")
 	router.HandleFunc("/articles/create", articlesCreateHandler).Methods("GET").Name("articles.create")
+	router.HandleFunc("/articles/{id:[1-9]+}", articlesEditHandler).Methods("GET").Name("articles.edit")
 
 	router.NotFoundHandler = http.HandlerFunc(notFoundHandler)
 	router.Use(forceHtmlMiddleware)
