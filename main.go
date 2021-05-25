@@ -72,7 +72,7 @@ func articlesIndexHandler(w http.ResponseWriter, r *http.Request) {
 	checkError(err)
 
 	defer rows.Close()
-	
+
 	var articles []Article
 	for rows.Next() {
 		var article Article
@@ -156,6 +156,7 @@ func articlesEditHandler(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Fprint(w, "500 服务器错误")
 		}
+
 	}
 }
 
@@ -201,6 +202,44 @@ func articlesUpdateHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+}
+
+func articlesDeleteHandler(w http.ResponseWriter, r *http.Request) {
+	id := getRouteVariable("id", r)
+	article, err := getArticleById(id)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprint(w, "文章未找到~")
+		} else {
+			checkError(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, "服务器错误")
+		}
+	} else {
+		rowAffected, err := article.delete()
+		if err != nil {
+			checkError(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, "服务器错误")
+		} else if rowAffected > 0 {
+			fmt.Fprint(w, "删除成功")
+		}
+	}
+
+}
+
+func (article Article) delete() (RowsAffected int64, err error) {
+	rs, err := db.Exec("DELETE FROM articles WHERE id = " + strconv.FormatInt(article.ID, 10))
+	if err != nil {
+		return 0, err
+	} else {
+		if n, _ := rs.RowsAffected(); n > 0 {
+			return n, nil
+		} else {
+			return 0, nil
+		}
+	}
 }
 
 // 获取路由的参数
@@ -333,6 +372,7 @@ func main() {
 
 	router.HandleFunc("/articles/{id:[1-9]+}/edit", articlesEditHandler).Methods("GET").Name("articles.edit")
 	router.HandleFunc("/articles/{id:[0-9]+}", articlesUpdateHandler).Methods("POST").Name("articles.update")
+	router.HandleFunc("/articles/{id:[0-9]+}/delete", articlesDeleteHandler).Methods("GET").Name("articles.delete")
 
 	router.NotFoundHandler = http.HandlerFunc(notFoundHandler)
 	router.Use(forceHtmlMiddleware)
