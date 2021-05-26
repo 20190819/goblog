@@ -10,9 +10,9 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/yangliang4488/goblog/bootstrap"
 	"github.com/yangliang4488/goblog/pkg/database"
 	"github.com/yangliang4488/goblog/pkg/logger"
-	"github.com/yangliang4488/goblog/pkg/route"
 	"github.com/yangliang4488/goblog/pkg/types"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -48,24 +48,6 @@ type ArticleFormatData struct {
 	Title, Body string
 	URL         *url.URL
 	Errors      error
-}
-
-func articlesShowhandler(w http.ResponseWriter, r *http.Request) {
-
-	id := route.GetRouteVariable("id", r)
-	article, err := getArticleById(id)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			w.WriteHeader(http.StatusNotFound)
-			fmt.Fprint(w, "404 文章未找到")
-		} else {
-			logger.LogError(err)
-			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprint(w, "500 服务器内部错误")
-		}
-	} else {
-		fmt.Fprint(w, "读取成功，文章标题 —— "+article.Title)
-	}
 }
 
 func articlesIndexHandler(w http.ResponseWriter, r *http.Request) {
@@ -134,7 +116,7 @@ func articlesCreateHandler(rw http.ResponseWriter, r *http.Request) {
 
 func articlesEditHandler(w http.ResponseWriter, r *http.Request) {
 	// 1. 获取ID
-	id := route.GetRouteVariable("id", r)
+	id := getRouteVariable("id", r)
 	// 2. 读取文章
 	article, err := getArticleById(id)
 
@@ -164,7 +146,7 @@ func articlesEditHandler(w http.ResponseWriter, r *http.Request) {
 
 func articlesUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	// 1. 获取ID
-	id := route.GetRouteVariable("id", r)
+	id := getRouteVariable("id", r)
 	// 2. 读取文章
 	_, err := getArticleById(id)
 	if err == nil {
@@ -207,7 +189,7 @@ func articlesUpdateHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func articlesDeleteHandler(w http.ResponseWriter, r *http.Request) {
-	id := route.GetRouteVariable("id", r)
+	id := getRouteVariable("id", r)
 	article, err := getArticleById(id)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -315,16 +297,17 @@ func saveArticleDB(title string, body string) (int64, error) {
 
 var router *mux.Router
 
+func getRouteVariable(key string, r *http.Request) string {
+	vars := mux.Vars(r)
+	return vars[key]
+}
+
 func main() {
 	// 初始化数据库
 	db = database.DB
 	database.Initialize()
-	// 初始化路由
-	route.Initialize()
-	router = route.Router
+	router = bootstrap.SetupRoute()
 
-	router.HandleFunc("/", defaultHandler).Methods("GET").Name("home")
-	router.HandleFunc("/about", aboutHandler).Methods("GET").Name("about")
 	router.HandleFunc("/articles/{id:[0-9]+}", articlesShowhandler).Methods("GET").Name("articles.show")
 	router.HandleFunc("/articles", articlesIndexHandler).Methods("GET").Name("articles.index")
 	router.HandleFunc("/articles", articlesStoreHandler).Methods("POST").Name("articles.store")
@@ -334,7 +317,6 @@ func main() {
 	router.HandleFunc("/articles/{id:[0-9]+}", articlesUpdateHandler).Methods("POST").Name("articles.update")
 	router.HandleFunc("/articles/{id:[0-9]+}/delete", articlesDeleteHandler).Methods("GET").Name("articles.delete")
 
-	router.NotFoundHandler = http.HandlerFunc(notFoundHandler)
 	router.Use(forceHtmlMiddleware)
 
 	homeUrl, _ := router.Get("home").URL()
