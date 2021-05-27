@@ -1,20 +1,22 @@
 package controllers
 
 import (
-	"database/sql"
 	"fmt"
+	"net/http"
+
+	"github.com/yangliang4488/goblog/app/models/article"
 	"github.com/yangliang4488/goblog/pkg/logger"
 	"github.com/yangliang4488/goblog/pkg/route"
-	"net/http"
+	"gorm.io/gorm"
 )
 
 type ArticlesController struct{}
 
 func (*ArticlesController) Show(w http.ResponseWriter, r *http.Request) {
 	id := route.GetRouteVariable("id", r)
-	article, err := getArticleById(id)
+	article, err := article.Get(id)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if err == gorm.ErrRecordNotFound {
 			w.WriteHeader(http.StatusNotFound)
 			fmt.Fprint(w, "404 文章未找到")
 		} else {
