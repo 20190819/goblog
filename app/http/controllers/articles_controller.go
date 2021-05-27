@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"fmt"
+	"html/template"
 	"net/http"
 
 	"github.com/yangliang4488/goblog/app/models/article"
@@ -26,5 +27,21 @@ func (*ArticlesController) Show(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		fmt.Fprint(w, "读取成功，文章标题 —— "+article.Title)
+	}
+}
+
+func (*ArticlesController) Index(w http.ResponseWriter, r *http.Request) {
+
+	articles, err := article.GetAll()
+	if err != nil {
+		logger.LogError(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprint(w, "500 服务器内部错误")
+	} else {
+		// 2. 加载模板
+		tmpl, err := template.ParseFiles("resources/views/articles/index.gohtml")
+		logger.LogError(err)
+		// 3. 渲染模板，将所有文章的数据传输进去
+		tmpl.Execute(w, articles)
 	}
 }
