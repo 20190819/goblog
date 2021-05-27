@@ -306,6 +306,8 @@ func main() {
 	// 初始化数据库
 	db = database.DB
 	database.Initialize()
+
+	bootstrap.SetupDB()
 	router = bootstrap.SetupRoute()
 
 	router.HandleFunc("/articles/{id:[0-9]+}", articlesShowhandler).Methods("GET").Name("articles.show")
