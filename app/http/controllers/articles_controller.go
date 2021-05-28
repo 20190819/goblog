@@ -91,10 +91,18 @@ func (*ArticlesController) Store(w http.ResponseWriter, r *http.Request) {
 
 	errors := validateArticleFormData(title, body)
 
-	if len(errors)==0{
-		insertId,err:=saveArticleDB()
-	}else{
-
+	if len(errors) == 0 {
+		_article := article.Article{
+			Title: title,
+			Body:  body,
+		}
+		_article.Create()
+		if _article.ID > 0 {
+			fmt.Fprint(w, "创建成功")
+		}
+	} else {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprint(w, "创建文章失败，请联系管理员")
 	}
 
 }
