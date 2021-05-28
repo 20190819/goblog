@@ -103,6 +103,50 @@ func (*ArticlesController) Store(w http.ResponseWriter, r *http.Request) {
 	} else {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprint(w, "创建文章失败，请联系管理员")
+		fmt.Println(errors)
+	}
+}
+
+func (*ArticlesController) Edit(w http.ResponseWriter, r *http.Request) {
+	id := route.GetRouteVariable("id", r)
+	_artile, err := article.Get(id)
+	if err == nil {
+		updateUrl := route.Name2URL("articles.update")
+		data := ArticleFormatData{
+			Title:  _artile.Title,
+			Body:   _artile.Body,
+			URL:    updateUrl,
+			Errors: nil,
+		}
+		tmp, _ := template.ParseFiles("resources/views/articles/edit.gohtml")
+		tmp.Execute(w, data)
+	} else {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Println(err)
+		logger.LogError(err)
 	}
 
+}
+
+func (*ArticlesController) Update(w http.ResponseWriter, r *http.Request) {
+	title := r.PostFormValue("title")
+	body := r.PostFormValue("body")
+	errors := validateArticleFormData(title, body)
+	id := route.GetRouteVariable("id", r)
+	_article, _err := article.Get(id)
+
+	if _err != nil {
+		fmt.Println(_err)
+		return
+	}
+
+	_article.Title = title
+	_article.Body = body
+
+	if errors != nil {
+		fmt.Println(errors)
+		return
+	}
+
+	_article.Update()
 }
