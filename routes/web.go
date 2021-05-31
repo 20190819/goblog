@@ -11,6 +11,9 @@ import (
 var pc *controllers.PageController = new(controllers.PageController)
 var ac *controllers.ArticlesController = new(controllers.ArticlesController)
 
+// 用户认证
+var auth *controllers.AuthController = new(controllers.AuthController)
+
 func RegisterWebRoutes(router *mux.Router) {
 
 	router.Use(middlewares.ForceHtml)
@@ -27,4 +30,8 @@ func RegisterWebRoutes(router *mux.Router) {
 	router.HandleFunc("/articles/{id:[1-9]+}/edit", ac.Edit).Methods("GET").Name("articles.edit")
 	router.HandleFunc("/articles/{id:[0-9]+}", ac.Update).Methods("POST").Name("articles.update")
 	router.HandleFunc("/articles/{id:[0-9]+}/delete", ac.Delete).Methods("GET").Name("articles.delete")
+
+	router.HandleFunc("/auth/register", auth.Register).Methods("GET").Name("auth.register")
+	router.HandleFunc("/auth/register", auth.DoRegister).Methods("POST").Name("auth.doRegister")
+
 }
