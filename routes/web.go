@@ -5,12 +5,15 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/yangliang4488/goblog/app/http/controllers"
+	"github.com/yangliang4488/goblog/app/http/middlewares"
 )
 
 var pc *controllers.PageController = new(controllers.PageController)
 var ac *controllers.ArticlesController = new(controllers.ArticlesController)
 
 func RegisterWebRoutes(router *mux.Router) {
+
+	router.Use(middlewares.ForceHtml)
 
 	// 静态页面
 	router.HandleFunc("/", pc.Home).Methods("GET").Name("home")
