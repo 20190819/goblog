@@ -75,25 +75,6 @@ func articlesIndexHandler(w http.ResponseWriter, r *http.Request) {
 	tmpl.Execute(w, articles)
 }
 
-func articlesStoreHandler(w http.ResponseWriter, r *http.Request) {
-	err := r.ParseForm()
-	if err != nil {
-		fmt.Fprint(w, "请提供正确的数据！")
-	} else {
-		title := r.PostForm.Get("title")
-		body := r.PostForm.Get("body")
-		lastInsertID, err := saveArticleDB(title, body)
-		if lastInsertID > 0 {
-			fmt.Fprint(w, "插入成功，ID 为"+types.Int64ToString(lastInsertID))
-		} else {
-			logger.LogError(err)
-			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprint(w, "500服务器内部错误")
-		}
-	}
-
-}
-
 func articlesCreateHandler(rw http.ResponseWriter, r *http.Request) {
 	html := `
 	<!DOCTYPE html>
@@ -269,32 +250,6 @@ func removeTrailingSlash(next http.Handler) http.Handler {
 
 var db *sql.DB
 
-func saveArticleDB(title string, body string) (int64, error) {
-	var (
-		id   int64
-		err  error
-		rs   sql.Result
-		stmt *sql.Stmt
-	)
-
-	stmt, err = db.Prepare("INSERT INTO articles (title, body) VALUES(?,?)")
-
-	if err != nil {
-		return 0, err
-	}
-
-	defer stmt.Close()
-
-	rs, err = stmt.Exec(title, body)
-
-	if id, err = rs.LastInsertId(); id > 0 {
-		return id, nil
-	} else {
-		return 0, err
-	}
-
-}
-
 var router *mux.Router
 
 func getRouteVariable(key string, r *http.Request) string {
@@ -309,11 +264,6 @@ func main() {
 
 	bootstrap.SetupDB()
 	router = bootstrap.SetupRoute()
-
-
-	router.HandleFunc("/articles/{id:[1-9]+}/edit", articlesEditHandler).Methods("GET").Name("articles.edit")
-	router.HandleFunc("/articles/{id:[0-9]+}", articlesUpdateHandler).Methods("POST").Name("articles.update")
-	router.HandleFunc("/articles/{id:[0-9]+}/delete", articlesDeleteHandler).Methods("GET").Name("articles.delete")
 
 	router.Use(forceHtmlMiddleware)
 
