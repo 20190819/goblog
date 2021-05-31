@@ -265,8 +265,6 @@ func main() {
 	bootstrap.SetupDB()
 	router = bootstrap.SetupRoute()
 
-	router.HandleFunc("/articles/{id:[0-9]+}/delete", articlesDeleteHandler).Methods("GET").Name("articles.delete")
-
 	router.Use(forceHtmlMiddleware)
 
 	homeUrl, _ := router.Get("home").URL()
