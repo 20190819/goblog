@@ -150,3 +150,27 @@ func (*ArticlesController) Update(w http.ResponseWriter, r *http.Request) {
 
 	_article.Update()
 }
+
+func (*ArticlesController) Delete(w http.ResponseWriter, r *http.Request) {
+	id := route.GetRouteVariable("id", r)
+	_article, _err := article.Get(id)
+
+	if _err != nil {
+		fmt.Println(_err)
+		return
+	}
+
+	affectedRow, err := _article.Delete()
+
+	if _err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Println("affectedRow", affectedRow)
+	if affectedRow > 0 {
+		fmt.Fprint(w, "删除成功")
+	} else {
+		fmt.Fprint(w, "删除失败")
+	}
+
+}

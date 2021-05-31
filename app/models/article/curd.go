@@ -41,7 +41,17 @@ func (article *Article) Update() (affected int64, err error) {
 	err = result.Error
 	if err != nil {
 		fmt.Println(err)
-		return
+		return 0, err
+	}
+	return result.RowsAffected, nil
+}
+
+func (article *Article) Delete() (affected int64, err error) {
+	result := model.DB.Delete(&article)
+	err = result.Error
+	if err != nil {
+		fmt.Println(err)
+		return 0, err
 	}
 	return result.RowsAffected, nil
 }
