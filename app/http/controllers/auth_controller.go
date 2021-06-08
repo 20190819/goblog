@@ -1,10 +1,12 @@
 package controllers
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 
 	"github.com/yangliang4488/goblog/app/models/user"
+	"github.com/yangliang4488/goblog/app/requests"
 )
 
 type AuthController struct{}
@@ -14,26 +16,28 @@ func (*AuthController) Register(w http.ResponseWriter, r *http.Request) {
 }
 
 func (*AuthController) DoRegister(w http.ResponseWriter, r *http.Request) {
-	// 表单注册
-	name := r.PostFormValue("name")
-	email := r.PostFormValue("email")
-	password := r.PostFormValue("password")
-
-	// 通过验证入库 跳转首页
+	// 初始化数据
 	_user := user.User{
-		Name:     name,
-		Email:    email,
-		Password: password,
+		Name:            r.PostFormValue("name"),
+		Email:           r.PostFormValue("email"),
+		Password:        r.PostFormValue("password"),
+		PasswordConfirm: r.PostFormValue("password_confirm"),
 	}
+	// 校验
+	errs := requests.ValidateRegistrationForm(_user)
 
-	_user.Create()
-	// 表单不通过，重新显示表单
-
-	if _user.ID > 0 {
-		fmt.Fprint(w, "成功插入ID:", _user.GetStringID())
+	if len(errs) > 0 {
+		data, _ := json.MarshalIndent(errs, "", "  ")
+		fmt.Fprint(w, string(data))
 	} else {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprint(w, "创建用户失败")
+		// 入库
+		_user.Create()
+
+		if _user.ID > 0 {
+			fmt.Fprint(w, "插入成功，ID 为 ", _user.GetStringID())
+		} else {
+			fmt.Fprint(w, "插入异常")
+		}
 	}
 
 }

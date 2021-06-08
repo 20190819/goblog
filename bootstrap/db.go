@@ -20,13 +20,10 @@ func SetupDB() {
 	sqlDB.SetMaxOpenConns(MAX_OPEN)
 	sqlDB.SetMaxIdleConns(MAX_IDLE)
 	sqlDB.SetConnMaxLifetime(MAX_LIFETIME)
-
-	CusorMigration(db)
+	// 迁移
+	migration(db)
 }
 
-func CusorMigration(db *gorm.DB) {
-	db.AutoMigrate(
-		&user.User{},
-		&article.Article{},
-	)
+func migration(db *gorm.DB) {
+	db.AutoMigrate(&user.User{}, &article.Article{})
 }
