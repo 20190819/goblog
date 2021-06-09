@@ -7,6 +7,7 @@ import (
 
 	"github.com/yangliang4488/goblog/app/models/user"
 	"github.com/yangliang4488/goblog/app/requests"
+	"github.com/yangliang4488/goblog/pkg/session"
 )
 
 type AuthController struct{}
@@ -40,4 +41,13 @@ func (*AuthController) DoRegister(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+}
+
+func (*AuthController) Login(w http.ResponseWriter, r *http.Request) {
+
+	session.Put("uid", "liangY11111")
+	// session.Flush()
+	// session.Forget("uid")
+	session.Flush()
+	// fmt.Fprint(w, session.Get("uid"))
 }

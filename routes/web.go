@@ -17,10 +17,12 @@ var auth *controllers.AuthController = new(controllers.AuthController)
 func RegisterWebRoutes(router *mux.Router) {
 
 	router.Use(middlewares.ForceHtml)
+	router.Use(middlewares.StartSession)
 
 	// 静态页面
 	router.HandleFunc("/", pc.Home).Methods("GET").Name("home")
 	router.HandleFunc("/about", pc.About).Methods("GET").Name("about")
+	router.HandleFunc("/login", auth.Login).Methods("GET").Name("login")
 	router.NotFoundHandler = http.HandlerFunc(pc.NotFound)
 	// 文章
 	router.HandleFunc("/articles/{id:[0-9]+}", ac.Show).Methods("GET").Name("articles.show")
