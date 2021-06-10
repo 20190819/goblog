@@ -3,11 +3,11 @@ package controllers
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/yangliang4488/goblog/pkg/auth"
 	"net/http"
 
 	"github.com/yangliang4488/goblog/app/models/user"
 	"github.com/yangliang4488/goblog/app/requests"
-	"github.com/yangliang4488/goblog/pkg/session"
 )
 
 type AuthController struct{}
@@ -45,9 +45,17 @@ func (*AuthController) DoRegister(w http.ResponseWriter, r *http.Request) {
 
 func (*AuthController) Login(w http.ResponseWriter, r *http.Request) {
 
-	session.Put("uid", "liangY11111")
-	// session.Flush()
-	// session.Forget("uid")
-	session.Flush()
-	// fmt.Fprint(w, session.Get("uid"))
+	// session.Put("uid", "liangY11111")
+	fmt.Fprint(w, "登录页111")
+}
+
+func (*AuthController) DoLogin(w http.ResponseWriter, r *http.Request) {
+	email := r.PostFormValue("email")
+	password := r.PostFormValue("password")
+
+	if err := auth.Attempt(email, password); err == nil {
+		fmt.Fprint(w, "登录成功")
+	} else {
+
+	}
 }

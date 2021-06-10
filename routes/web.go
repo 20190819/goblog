@@ -22,7 +22,6 @@ func RegisterWebRoutes(router *mux.Router) {
 	// 静态页面
 	router.HandleFunc("/", pc.Home).Methods("GET").Name("home")
 	router.HandleFunc("/about", pc.About).Methods("GET").Name("about")
-	router.HandleFunc("/login", auth.Login).Methods("GET").Name("login")
 	router.NotFoundHandler = http.HandlerFunc(pc.NotFound)
 	// 文章
 	router.HandleFunc("/articles/{id:[0-9]+}", ac.Show).Methods("GET").Name("articles.show")
@@ -35,5 +34,8 @@ func RegisterWebRoutes(router *mux.Router) {
 
 	router.HandleFunc("/auth/register", auth.Register).Methods("GET").Name("auth.register")
 	router.HandleFunc("/auth/register", auth.DoRegister).Methods("POST").Name("auth.doRegister")
+	// 登录
+	router.HandleFunc("/auth/login", auth.Login).Methods("GET").Name("auth.login")
+	router.HandleFunc("/auth/login", auth.DoLogin).Methods("POST").Name("auth.doLogin")
 
 }

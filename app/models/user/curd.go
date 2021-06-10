@@ -18,3 +18,17 @@ func (user *User) Create() (err error) {
 func (user *User) GetStringID() int64 {
 	return user.ID
 }
+
+func (user *User) ComparePassword(password string) bool {
+	return true
+}
+
+func Get(uid string) (user User, err error) {
+	// todo
+	return User{}, nil
+}
+
+func GetByEmail(email string) (user User, err error) {
+	// todo
+	return User{}, nil
+}
