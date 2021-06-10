@@ -56,6 +56,6 @@ func (*AuthController) DoLogin(w http.ResponseWriter, r *http.Request) {
 	if err := auth.Attempt(email, password); err == nil {
 		fmt.Fprint(w, "登录成功")
 	} else {
-
+		fmt.Fprint(w, "登录失败")
 	}
 }

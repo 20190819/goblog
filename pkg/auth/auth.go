@@ -2,6 +2,7 @@ package auth
 
 import (
 	"errors"
+	"fmt"
 	"log"
 
 	"github.com/yangliang4488/goblog/app/models/user"
@@ -38,7 +39,9 @@ func Attempt(email string, password string) error {
 		return err
 	} else {
 		if !_user.ComparePassword(password) {
-			return errors.New("账号不存在或密码错误")
+			errStr := "账号不存在或密码错误"
+			fmt.Println(errStr)
+			return errors.New(errStr)
 		}
 		session.Put("uid", _user.GetStringID())
 		return nil
